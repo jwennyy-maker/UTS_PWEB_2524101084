@@ -1,0 +1,55 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: daylist_app
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: Daylist
+      APP_ENV: local
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      SESSION_DRIVER: file
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: daylist
+      DB_USERNAME: daylist_user
+      DB_PASSWORD: daylist_password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - daylist_network
+
+  db:
+    image: mysql:8.0
+    container_name: daylist_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: daylist
+      MYSQL_USER: daylist_user
+      MYSQL_PASSWORD: daylist_password
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - daylist_dbdata:/var/lib/mysql
+    networks:
+      - daylist_network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  daylist_dbdata:
+
+networks:
+  daylist_network:
+    driver: bridge
